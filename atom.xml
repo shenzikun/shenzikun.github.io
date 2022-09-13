@@ -3,11 +3,11 @@
   <title>鹤向闲云</title>
   
   <subtitle>生活明朗,万物可爱</subtitle>
-  <link href="http://example.com/atom.xml" rel="self"/>
+  <link href="https://shenzikun.github.io/atom.xml" rel="self"/>
   
-  <link href="http://example.com/"/>
+  <link href="https://shenzikun.github.io/"/>
   <updated>2022-09-13T02:26:00.569Z</updated>
-  <id>http://example.com/</id>
+  <id>https://shenzikun.github.io/</id>
   
   <author>
     <name>鹤向闲云</name>
@@ -18,8 +18,8 @@
   
   <entry>
     <title>Hello World</title>
-    <link href="http://example.com/posts/4a17b156.html"/>
-    <id>http://example.com/posts/4a17b156.html</id>
+    <link href="https://shenzikun.github.io/posts/4a17b156.html"/>
+    <id>https://shenzikun.github.io/posts/4a17b156.html</id>
     <published>2022-09-12T14:28:19.573Z</published>
     <updated>2022-09-13T02:26:00.569Z</updated>
     
