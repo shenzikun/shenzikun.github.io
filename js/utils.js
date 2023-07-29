@@ -58,15 +58,18 @@ const anzhiyu = {
     }
   },
 
-  snackbarShow: (text, showAction = false, duration = 2000) => {
+  snackbarShow: (text, showActionFunction = false, duration = 2000, actionText = false) => {
     const { position, bgLight, bgDark } = GLOBAL_CONFIG.Snackbar;
     const bg = document.documentElement.getAttribute("data-theme") === "light" ? bgLight : bgDark;
     const root = document.querySelector(":root");
     root.style.setProperty("--anzhiyu-snackbar-time", duration + "ms");
+
     Snackbar.show({
       text: text,
       backgroundColor: bg,
-      showAction: showAction,
+      onActionClick: showActionFunction,
+      actionText: actionText,
+      showAction: actionText,
       duration: duration,
       pos: position,
       customClass: "snackbar-css",
@@ -459,7 +462,17 @@ const anzhiyu = {
   catalogActive: function () {
     const $list = document.getElementById("catalog-list");
     if ($list) {
-      const $catalog = document.getElementById(decodeURIComponent(window.location.pathname));
+      const pathname = decodeURIComponent(window.location.pathname);
+      const catalogListItems = $list.querySelectorAll(".catalog-list-item");
+
+      let $catalog = null;
+      catalogListItems.forEach(item => {
+        if (pathname.startsWith(item.id)) {
+          $catalog = item;
+          return;
+        }
+      });
+
       anzhiyu.scrollByMouseWheel($list, $catalog);
     }
   },
@@ -472,7 +485,7 @@ const anzhiyu = {
     }
   },
   // 修改时间显示"最近"
-  diffDate: function (d, more = false) {
+  diffDate: function (d, more = false, simple = false) {
     const dateNow = new Date();
     const datePost = new Date(d);
     const dateDiff = dateNow.getTime() - datePost.getTime();
@@ -499,11 +512,30 @@ const anzhiyu = {
       } else {
         result = GLOBAL_CONFIG.date_suffix.just;
       }
+    } else if (simple) {
+      const monthCount = dateDiff / month;
+      const dayCount = dateDiff / day;
+      const hourCount = dateDiff / hour;
+      const minuteCount = dateDiff / minute;
+      if (monthCount >= 1) {
+        result = datePost.toLocaleDateString().replace(/\//g, "-");
+      } else if (dayCount >= 1 && dayCount <= 3) {
+        result = parseInt(dayCount) + " " + GLOBAL_CONFIG.date_suffix.day;
+      } else if (dayCount > 3) {
+        result = datePost.getMonth() + 1 + "/" + datePost.getDate();
+      } else if (hourCount >= 1) {
+        result = parseInt(hourCount) + " " + GLOBAL_CONFIG.date_suffix.hour;
+      } else if (minuteCount >= 1) {
+        result = parseInt(minuteCount) + " " + GLOBAL_CONFIG.date_suffix.min;
+      } else {
+        result = GLOBAL_CONFIG.date_suffix.just;
+      }
     } else {
       result = parseInt(dateDiff / day);
     }
     return result;
   },
+
   // 修改即刻中的时间显示
   changeTimeInEssay: function () {
     document.querySelector("#bber") &&
@@ -534,24 +566,31 @@ const anzhiyu = {
   },
   sayhi: function () {
     const $sayhiEl = document.getElementById("author-info__sayhi");
-    const getTimeState = function () {
-      var e = new Date().getHours(),
-        t = "";
-      return (
-        0 <= e && e <= 5
-          ? (t = "晚安😴")
-          : 5 < e && e <= 10
-          ? (t = "早上好👋")
-          : 10 < e && e <= 14
-          ? (t = "中午好👋")
-          : 14 < e && e <= 18
-          ? (t = "下午好👋")
-          : 18 < e && e <= 24 && (t = "晚上好👋"),
-        t
-      );
+  
+    const getTimeState = () => {
+      const hour = new Date().getHours();
+      let message = "";
+  
+      if (hour >= 0 && hour <= 5) {
+        message = "睡个好觉，保证精力充沛";
+      } else if (hour > 5 && hour <= 10) {
+        message = "一日之计在于晨";
+      } else if (hour > 10 && hour <= 14) {
+        message = "吃饱了才有力气干活";
+      } else if (hour > 14 && hour <= 18) {
+        message = "集中精力，攻克难关";
+      } else if (hour > 18 && hour <= 24) {
+        message = "不要太劳累了，早睡更健康";
+      }
+  
+      return message;
     };
-    $sayhiEl && ($sayhiEl.innerHTML = getTimeState() + "！我是");
+  
+    if ($sayhiEl) {
+      $sayhiEl.innerHTML = getTimeState();
+    }
   },
+  
   // 友链注入预设评论
   addFriendLink() {
     var input = document.getElementsByClassName("el-textarea__inner")[0];
@@ -563,27 +602,6 @@ const anzhiyu = {
     input.dispatchEvent(evt);
     input.focus();
     input.setSelectionRange(-1, -1);
-  },
-  //友链随机传送
-  travelling() {
-    var fetchUrl = GLOBAL_CONFIG.friends_vue_info.apiurl + "randomfriend";
-    fetch(fetchUrl)
-      .then(res => res.json())
-      .then(json => {
-        var name = json.name;
-        var link = json.link;
-        Snackbar.show({
-          text:
-            "点击前往按钮进入随机一个友链，不保证跳转网站的安全性和可用性。本次随机到的是本站友链：「" + name + "」",
-          duration: 8000,
-          pos: "top-center",
-          actionText: "前往",
-          onActionClick: function (element) {
-            element.style.opacity = 0;
-            window.open(link, "_blank");
-          },
-        });
-      });
   },
   //切换音乐播放状态
   musicToggle: function (changePaly = true) {
@@ -670,7 +688,7 @@ const anzhiyu = {
   },
   // 显示中控台
   showConsole: function () {
-    document.querySelector("#console").classList.add("show");
+    consoleEl.classList.add("show");
     anzhiyu.initConsoleState();
   },
 
@@ -684,7 +702,7 @@ const anzhiyu = {
       consoleEl.classList.remove("reward-show");
     }
     // 获取center-console元素
-    const centerConsole = document.getElementById('center-console');
+    const centerConsole = document.getElementById("center-console");
 
     // 检查center-console是否被选中
     if (centerConsole.checked) {
@@ -1055,8 +1073,16 @@ const anzhiyu = {
 
   // 跳转开往
   totraveling: function () {
-    anzhiyu.snackbarShow("即将跳转到「开往」项目的成员博客，不保证跳转网站的安全性和可用性", !1, 5000);
-    setTimeout(function () {
+    anzhiyu.snackbarShow(
+      "即将跳转到「开往」项目的成员博客，不保证跳转网站的安全性和可用性",
+      element => {
+        element.style.opacity = 0;
+        travellingsTimer && clearTimeout(travellingsTimer);
+      },
+      5000,
+      "取消"
+    );
+    travellingsTimer = setTimeout(function () {
       window.open("https://www.travellings.cn/go.html");
     }, "5000");
   },
@@ -1165,6 +1191,7 @@ const anzhiyu = {
       consoleEl.classList.add("show");
     }
     const consoleKeyboard = document.querySelector("#consoleKeyboard");
+
     if (consoleKeyboard) {
       if (localStorage.getItem("keyboardToggle") === "true") {
         consoleKeyboard.classList.add("on");
@@ -1261,5 +1288,20 @@ const anzhiyu = {
     } else {
       menuCommentBarrageDom.style.display = "none";
     }
+  },
+  // 切换作者卡片状态文字
+  changeSayHelloText: function () {
+    console.info(GLOBAL_CONFIG);
+    const greetings = GLOBAL_CONFIG.authorStatus.skills;
+
+    const authorInfoSayHiElement = document.getElementById("author-info__sayhi");
+
+    let lastSayHello = authorInfoSayHiElement.textContent;
+
+    let randomGreeting = lastSayHello;
+    while (randomGreeting === lastSayHello) {
+      randomGreeting = greetings[Math.floor(Math.random() * greetings.length)];
+    }
+    authorInfoSayHiElement.textContent = randomGreeting;
   },
 };
